@@ -3373,7 +3373,7 @@ const char* colores[7] = {
 
 const char* RESET = "\033[0m";
 
-void programa72(){
+void programa73(){
     int num_barras;
     int barras[7] = {0}; 
     int i, nivel;
@@ -3504,7 +3504,7 @@ void programa72(){
         return detH;
     }
     
-    void programa73() {
+    void programa72() {
         int filas, columnas, numeroH, numero2H, detH;
     
         printf("Ingrese el numero de filas: ");
@@ -3628,8 +3628,8 @@ int main() {
     printf("69.- Programa 69:triangulo de color rojo\n");
     printf("70.- Programa 70: union \n");
     printf("71.- Programa 71: vehiculo union\n");
-    printf("72.- Programa 72: grafica de barras\n");
-    printf("73.- Programa 73: impresion de matrices horizontal\n");
+    printf("72.- Programa 72: impresion de matrices horizontal\n");
+    printf("73.- Programa 73: grafica de barras\n");
 
     
 
