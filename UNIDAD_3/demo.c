@@ -6,20 +6,34 @@
 
 MYSQL *con;
 
-void finish_with_error(){
+void finish_with_error()
+{
+
     fprintf(stderr, "%s\n", mysql_error(con));
+
     mysql_close(con);
+
     exit(1);
 }
 
-void conectar(){
+void conectar()
+{
+
     con = mysql_init(NULL);
-    if (con == NULL){
+
+    if (con == NULL)
+    {
+
         fprintf(stderr, "mysql_init() falló\n");
+
         exit(1);
     }
 
-    if (mysql_real_connect(con, "localhost", "root", "12345", "basedatos", 3306, NULL, 0) == NULL){
+    if (mysql_real_connect(con, "localhost", "root", "12345", "basedatos",
+
+                           3306, NULL, 0) == NULL)
+    {
+
         finish_with_error();
     }
 }
@@ -134,8 +148,6 @@ int main()
 
     actualizar_persona(1, "Ana María", 29);
 
-    eliminar_persona(1);
-
     mysql_close(con);
 
     return 0;
@@ -169,7 +181,7 @@ brew install mysql-client
 
 
 
-gcc -o Demo /Users/nittos/Documents/GitHub/C_Programs/4.BaseDatos/Demo.c -I/user/include/mysql -L/usr/lib/mysql -lmysqlclient
+gcc -o Demo /Users/nittos/Documents/GitHub/C_Programs/4.BaseDatos/5Demo.c -I/user/include/mysql -L/usr/lib/mysql -lmysqlclient
 
 
 
