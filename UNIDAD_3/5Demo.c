@@ -135,7 +135,7 @@ int main()
     actualizar_persona(1, "Ana María", 29);
 
     eliminar_persona(1);
-
+    
     mysql_close(con);
 
     return 0;
@@ -195,7 +195,16 @@ CREATE TABLE personas (
     edad INT
 );
 
-
+create table balon(
+ id_balon int AUTO_INCREMENT PRIMARY KEY,
+ nombre VARCHAR(50),
+ marca VARCHAR(50),
+ precio DECIMAL(10,2),
+ color VARCHAR(50),
+ material VARCHAR(50),
+ deporte VARCHAR(50),
+ talla VARCHAR(50)
+ );
 
 
  */
