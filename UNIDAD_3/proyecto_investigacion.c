@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <C:\Program Files\MySQL\MySQL Server 8.0\include\mysql.h> // ¡¡¡Ajusta esta ruta a tu instalación de MySQL!!!
+#include <C:\Program Files\MySQL\MySQL Server 8.0\include\mysql.h> 
 
-// --- Estructuras para cada tabla ---
+#define CONSOLE_WIDTH 80 
+
 typedef struct {
     int id_programa;
-    char nombre[71]; // VARCHAR(70) + NUL
+    char nombre[71]; 
 } Programa;
 
 typedef struct {
-    char dni[16]; // VARCHAR(15) + NUL
+    char dni[16]; 
     char nombre[71];
     char apellido[71];
     char titulacion[71];
@@ -21,47 +22,41 @@ typedef struct {
     int id_departamento;
     char nombre[71];
     char campus[71];
-    char telefono[16]; // VARCHAR(15) + NUL
-    char dni_director[16]; // FOREIGN KEY (dni) REFERENCES profesor(dni)
+    char telefono[16]; 
+    char dni_director[16]; 
 } Departamento;
 
 typedef struct {
     int id_grupo;
     char nombre[71];
-    int id_departamento; // FOREIGN KEY
-    char dni_lider[16]; // FOREIGN KEY
+    int id_departamento; 
+    char dni_lider[16]; 
 } Grupo;
 
 typedef struct {
     int id_proyecto;
     char nombre[71];
-    char fecha_inicio[11]; // DATE formatoYYYY-MM-DD + NUL
-    char fecha_fin[11];    // DATE formatoYYYY-MM-DD + NUL
-    float presupuesto;     // DECIMAL(10,2)
-    int id_grupo;          // FOREIGN KEY
+    char fecha_inicio[11]; 
+    char fecha_fin[11];    
+    float presupuesto;     
+    int id_grupo;          
 } Proyecto;
 
-// Financiamiento es una tabla de unión (muchos a muchos)
 typedef struct {
-    float cantidad_aportada; // DECIMAL(10,2)
-    int id_proyecto;         // FOREIGN KEY
-    int id_programa;         // FOREIGN KEY
+    float cantidad_aportada; 
+    int id_proyecto;         
+    int id_programa;         
 } Financiamiento;
 
-// Participa es una tabla de unión (muchos a muchos)
 typedef struct {
-    char dni_profesor[16];   // FOREIGN KEY
-    int id_proyecto;         // FOREIGN KEY
-    char fecha_incorporacion[11]; // DATE
-    char fecha_salida[11];        // DATE
+    char dni_profesor[16];   
+    int id_proyecto;         
+    char fecha_incorporacion[11]; 
+    char fecha_salida[11];        
 } Participa;
 
-// --- Variable global de conexión ---
 MYSQL *con;
 
-// --- Funciones de utilidad ---
-
-// Maneja los errores de MySQL y cierra la conexión
 void finish_with_error() {
     fprintf(stderr, "Error de MySQL: %s\n", mysql_error(con));
     if (con != NULL) {
@@ -70,14 +65,12 @@ void finish_with_error() {
     exit(1);
 }
 
-// Establece la conexión a la base de datos
 void conectar() {
     con = mysql_init(NULL);
     if (con == NULL) {
         fprintf(stderr, "mysql_init() falló\n");
         exit(1);
     }
-    // Asegúrate de que la base de datos 'proyecto_investigacion' exista
     if (mysql_real_connect(con, "localhost", "root", "12345", "proyecto_investigacion", 3306, NULL, 0) == NULL) {
         finish_with_error();
     }
@@ -86,38 +79,110 @@ void conectar() {
 
 void clear_input_buffer() {
     int c;
-    while ((c = getchar()) != '\n' && c != EOF) {
-        // Discard characters until newline or EOF
-    }
-}
-//     exit(1);
-// }
-// Placeholder for the MySQL connection (if applicable)
-// MYSQL *con;
-// Improved get_string_input function
-void get_string_input(char *buffer, size_t buffer_size) {
-    if (fgets(buffer, buffer_size, stdin) != NULL) {
-        // Remove trailing newline, if present
-        size_t len = strcspn(buffer, "\n");
-        buffer[len] = '\0';
-        // Optional: Check for buffer overflow (if fgets reads the entire buffer without a newline)
-        if (len == buffer_size - 1) {
-            fprintf(stderr, "Warning: Input might be truncated.\n");
-            // Consider additional error handling here, like clearing the rest of the input
-        }
-    } else {
-        // Handle input error (e.g., EOF)
-        fprintf(stderr, "Error reading input.\n");
-        buffer[0] = '\0'; // Ensure the buffer is empty
-    }
+    while ((c = getchar()) != '\n' && c != EOF);
 }
 
-// --- Funciones CRUD para Programa ---
+void get_string_input(char *buffer, int size) {
+    fgets(buffer, size, stdin);
+    buffer[strcspn(buffer, "\n")] = 0; 
+}
+
+void gotoxy(int x, int y){
+    printf("\033[%d;%dH", y, x);
+}
+
+void limpiar_pantalla() {
+    printf("\033[2J");   
+    printf("\033[1;1H"); 
+}
+
+void display_main_menu() {
+    limpiar_pantalla(); 
+    int start_y = 5; 
+
+    char *title = "----- GESTION DE PROYECTOS DE INVESTIGACION -----";
+    char *option1 = "1. Gestionar Programas";
+    char *option2 = "2. Gestionar Profesores";
+    char *option3 = "3. Gestionar Departamentos";
+    char *option4 = "4. Gestionar Grupos";
+    char *option5 = "5. Gestionar Proyectos";
+    char *option6 = "6. Gestionar Financiamientos";
+    char *option7 = "7. Gestionar Participaciones";
+    char *option8 = "8. Salir";
+    char *prompt = "Opcion: ";
+
+    gotoxy((CONSOLE_WIDTH - strlen(title)) / 2, start_y++);
+    printf("%s\n", title);
+    start_y++; 
+
+    gotoxy((CONSOLE_WIDTH - strlen(option1)) / 2, start_y++);
+    printf("%s\n", option1);
+    gotoxy((CONSOLE_WIDTH - strlen(option2)) / 2, start_y++);
+    printf("%s\n", option2);
+    gotoxy((CONSOLE_WIDTH - strlen(option3)) / 2, start_y++);
+    printf("%s\n", option3);
+    gotoxy((CONSOLE_WIDTH - strlen(option4)) / 2, start_y++);
+    printf("%s\n", option4);
+    gotoxy((CONSOLE_WIDTH - strlen(option5)) / 2, start_y++);
+    printf("%s\n", option5);
+    gotoxy((CONSOLE_WIDTH - strlen(option6)) / 2, start_y++);
+    printf("%s\n", option6);
+    gotoxy((CONSOLE_WIDTH - strlen(option7)) / 2, start_y++);
+    printf("%s\n", option7);
+    gotoxy((CONSOLE_WIDTH - strlen(option8)) / 2, start_y++);
+    printf("%s\n", option8);
+    start_y++; 
+
+    gotoxy((CONSOLE_WIDTH - strlen(prompt)) / 2, start_y++);
+    printf("%s", prompt);
+}
+
+void display_crud_menu(const char* table_name, int* opcion) {
+    limpiar_pantalla(); 
+    int start_y = 5; 
+
+    char title_buffer[100];
+    snprintf(title_buffer, sizeof(title_buffer), "----- GESTION DE %sS -----", table_name);
+
+    char *option1 = "1. Insertar";
+    char *option2 = "2. Consultar";
+    char *option3 = "3. Modificar";
+    char *option4 = "4. Eliminar";
+    char *option0 = "0. Volver al menu principal";
+    char *prompt = "Opcion: ";
+
+    gotoxy((CONSOLE_WIDTH - strlen(title_buffer)) / 2, start_y++);
+    printf("%s\n", title_buffer);
+    start_y++;
+
+    gotoxy((CONSOLE_WIDTH - strlen(option1)) / 2, start_y++);
+    printf("%s\n", option1);
+    gotoxy((CONSOLE_WIDTH - strlen(option2)) / 2, start_y++);
+    printf("%s\n", option2);
+    gotoxy((CONSOLE_WIDTH - strlen(option3)) / 2, start_y++);
+    printf("%s\n", option3);
+    gotoxy((CONSOLE_WIDTH - strlen(option4)) / 2, start_y++);
+    printf("%s\n", option4);
+    gotoxy((CONSOLE_WIDTH - strlen(option0)) / 2, start_y++);
+    printf("%s\n", option0);
+    start_y++;
+
+    gotoxy((CONSOLE_WIDTH - strlen(prompt)) / 2, start_y++);
+    printf("%s", prompt);
+    
+    if (scanf("%d", opcion) != 1) { 
+        clear_input_buffer(); 
+        *opcion = -1; 
+    }
+    clear_input_buffer(); 
+}
+
 void insert_programa() {
+    limpiar_pantalla(); 
     Programa p;
     printf("--- Insertar Programa ---\n");
     printf("Nombre del programa: ");
-    clear_input_buffer(); // <-- ¡Añadido aquí! (Necesario si la función se llama después de un scanf)
+    clear_input_buffer(); 
     get_string_input(p.nombre, sizeof(p.nombre));
 
     char query[256];
@@ -128,9 +193,13 @@ void insert_programa() {
     } else {
         printf("Programa insertado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void read_programas() {
+    limpiar_pantalla(); 
     printf("--- Listado de Programas ---\n");
     if (mysql_query(con, "SELECT id_programa, nombre FROM programa")) {
         finish_with_error();
@@ -147,9 +216,13 @@ void read_programas() {
         printf("%-5s %-40s\n", row[0] ? row[0] : "NULL", row[1] ? row[1] : "NULL");
     }
     mysql_free_result(result);
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void update_programa() {
+    limpiar_pantalla(); 
     Programa p;
     printf("--- Actualizar Programa ---\n");
     read_programas(); 
@@ -157,10 +230,14 @@ void update_programa() {
     if (scanf("%d", &p.id_programa) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
+    clear_input_buffer(); 
     printf("Nuevo nombre del programa: ");
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     get_string_input(p.nombre, sizeof(p.nombre));
 
     char query[256];
@@ -171,9 +248,13 @@ void update_programa() {
     } else {
         printf("Programa actualizado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void delete_programa() {
+    limpiar_pantalla(); 
     int id;
     printf("--- Eliminar Programa ---\n");
     read_programas(); 
@@ -181,9 +262,12 @@ void delete_programa() {
     if (scanf("%d", &id) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
-    // No se necesita clear_input_buffer() después de este scanf porque no le sigue un get_string_input
+    clear_input_buffer(); 
     
     char query[128];
     snprintf(query, sizeof(query), "DELETE FROM programa WHERE id_programa=%d", id);
@@ -193,29 +277,38 @@ void delete_programa() {
     } else {
         printf("Programa eliminado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
-
-// --- Funciones CRUD para Profesor ---
 void insert_profesor() {
+    limpiar_pantalla(); 
     Profesor p;
     printf("--- Insertar Profesor ---\n");
     printf("DNI: ");
-    clear_input_buffer(); // <-- ¡Añadido aquí! (Necesario si la función se llama después de un scanf)
+    clear_input_buffer(); 
     get_string_input(p.dni, sizeof(p.dni));
+
     printf("Nombre: ");
+    clear_input_buffer(); 
     get_string_input(p.nombre, sizeof(p.nombre));
     printf("Apellido: ");
+    clear_input_buffer(); 
     get_string_input(p.apellido, sizeof(p.apellido));
     printf("Titulacion: ");
+    clear_input_buffer(); 
     get_string_input(p.titulacion, sizeof(p.titulacion));
     printf("Anios de experiencia: ");
     if (scanf("%d", &p.anios_experiencia) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
-    // No se necesita clear_input_buffer() después de este scanf porque no le sigue un get_string_input
+    clear_input_buffer(); 
     
     char query[512];
     snprintf(query, sizeof(query),
@@ -227,9 +320,13 @@ void insert_profesor() {
     } else {
         printf("Profesor insertado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void read_profesores() {
+    limpiar_pantalla(); 
     printf("--- Listado de Profesores ---\n");
     if (mysql_query(con, "SELECT dni, nombre, apellido, titulacion, anios_experiencia FROM profesor")) {
         finish_with_error();
@@ -248,46 +345,62 @@ void read_profesores() {
                row[3] ? row[3] : "NULL", row[4] ? row[4] : "NULL");
     }
     mysql_free_result(result);
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void update_profesor() {
+    limpiar_pantalla(); 
     Profesor p;
     printf("--- Actualizar Profesor ---\n");
-    read_profesores();
+    read_profesores(); 
     printf("DNI del profesor a actualizar: ");
+    clear_input_buffer(); 
     get_string_input(p.dni, sizeof(p.dni));
+
     printf("Nuevo nombre: ");
+    clear_input_buffer(); 
     get_string_input(p.nombre, sizeof(p.nombre));
     printf("Nuevo apellido: ");
+    clear_input_buffer(); 
     get_string_input(p.apellido, sizeof(p.apellido));
     printf("Nueva titulacion: ");
+    clear_input_buffer(); 
     get_string_input(p.titulacion, sizeof(p.titulacion));
     printf("Nuevos anios de experiencia: ");
-    if (scanf("%d", &p.anios_experiencia) != 1) {
-        clear_input_buffer(); // Limpiar si la entrada es inválida
-        printf("Entrada invalida.\n");
+    if (scanf("%d", &p.anios_experiencia) != 1) { 
+        clear_input_buffer(); 
+        printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
-    clear_input_buffer(); // Consume the newline left by scanf
+    clear_input_buffer(); 
+    
     char query[512];
     snprintf(query, sizeof(query),
              "UPDATE profesor SET nombre='%s', apellido='%s', titulacion='%s', anios_experiencia=%d WHERE dni='%s'",
              p.nombre, p.apellido, p.titulacion, p.anios_experiencia, p.dni);
-             printf("Query: %s\n", query); // Print the query for debugging
-    // if (mysql_query(con, query)) { // Uncomment if you are using MySQL directly
-    //     finish_with_error();
-    // } else {
-    //     printf("Profesor actualizado correctamente.\n");
-    // }
-    printf("Profesor actualizado correctly (placeholder).\n"); // Placeholder
+
+    if (mysql_query(con, query)) {
+        finish_with_error();
+    } else {
+        printf("Profesor actualizado correctamente.\n");
+    }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void delete_profesor() {
+    limpiar_pantalla(); 
     char dni[16];
     printf("--- Eliminar Profesor ---\n");
-    read_profesores();
+    read_profesores(); 
     printf("DNI del profesor a eliminar: ");
-    clear_input_buffer(); // <-- ¡Añadido aquí! (Necesario antes de get_string_input)
+    clear_input_buffer(); 
     get_string_input(dni, sizeof(dni));
 
     char query[128];
@@ -298,22 +411,27 @@ void delete_profesor() {
     } else {
         printf("Profesor eliminado correctamente .\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
-
-// --- Funciones CRUD para Departamento ---
 void insert_departamento() {
+    limpiar_pantalla(); 
     Departamento d;
     printf("--- Insertar Departamento ---\n");
     printf("Nombre del departamento: ");
-    clear_input_buffer(); // <-- ¡Añadido aquí!
+    clear_input_buffer(); 
     get_string_input(d.nombre, sizeof(d.nombre));
     printf("Campus: ");
+    clear_input_buffer(); 
     get_string_input(d.campus, sizeof(d.campus));
     printf("Telefono: ");
+    clear_input_buffer(); 
     get_string_input(d.telefono, sizeof(d.telefono));
     read_profesores(); 
     printf("DNI del Director : ");
+    clear_input_buffer(); 
     get_string_input(d.dni_director, sizeof(d.dni_director));
 
     char query[512];
@@ -326,9 +444,13 @@ void insert_departamento() {
     } else {
         printf("Departamento insertado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void read_departamentos() {
+    limpiar_pantalla(); 
     printf("--- Listado de Departamentos ---\n");
     if (mysql_query(con, "SELECT d.id_departamento, d.nombre, d.campus, d.telefono, p.nombre, p.apellido FROM departamento d LEFT JOIN profesor p ON d.dni = p.dni")) {
         finish_with_error();
@@ -347,9 +469,13 @@ void read_departamentos() {
                row[3] ? row[3] : "NULL", row[4] ? row[4] : "NULL", row[5] ? row[5] : "");
     }
     mysql_free_result(result);
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void update_departamento() {
+    limpiar_pantalla(); 
     Departamento d;
     printf("--- Actualizar Departamento ---\n");
     read_departamentos(); 
@@ -357,17 +483,24 @@ void update_departamento() {
     if (scanf("%d", &d.id_departamento) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
+    clear_input_buffer(); 
     printf("Nuevo nombre: ");
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     get_string_input(d.nombre, sizeof(d.nombre));
     printf("Nuevo campus: ");
+    clear_input_buffer(); 
     get_string_input(d.campus, sizeof(d.campus));
     printf("Nuevo telefono: ");
+    clear_input_buffer(); 
     get_string_input(d.telefono, sizeof(d.telefono));
     read_profesores(); 
     printf("Nuevo DNI del Director : ");
+    clear_input_buffer(); 
     get_string_input(d.dni_director, sizeof(d.dni_director));
 
     char query[512];
@@ -380,9 +513,13 @@ void update_departamento() {
     } else {
         printf("Departamento actualizado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void delete_departamento() {
+    limpiar_pantalla(); 
     int id;
     printf("--- Eliminar Departamento ---\n");
     read_departamentos(); 
@@ -390,8 +527,12 @@ void delete_departamento() {
     if (scanf("%d", &id) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     
     char query[128];
     snprintf(query, sizeof(query), "DELETE FROM departamento WHERE id_departamento=%d", id);
@@ -401,25 +542,32 @@ void delete_departamento() {
     } else {
         printf("Departamento eliminado correctamente .\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
-// --- Funciones CRUD para Grupo ---
 void insert_grupo() {
+    limpiar_pantalla(); 
     Grupo g;
     printf("--- Insertar Grupo ---\n");
     printf("Nombre del grupo: ");
-    clear_input_buffer(); // <-- ¡Añadido aquí!
+    clear_input_buffer(); 
     get_string_input(g.nombre, sizeof(g.nombre));
     read_departamentos(); 
     printf("ID del Departamento : ");
     if (scanf("%d", &g.id_departamento) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     read_profesores(); 
     printf("DNI del Lider : ");
+    clear_input_buffer(); 
     get_string_input(g.dni_lider, sizeof(g.dni_lider));
 
     char query[512];
@@ -432,9 +580,13 @@ void insert_grupo() {
     } else {
         printf("Grupo insertado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void read_grupos() {
+    limpiar_pantalla(); 
     printf("--- Listado de Grupos ---\n");
     if (mysql_query(con, "SELECT g.id_grupo, g.nombre, d.nombre AS departamento, p.nombre AS lider_nombre, p.apellido AS lider_apellido FROM grupo g JOIN departamento d ON g.id_departamento = d.id_departamento LEFT JOIN profesor p ON g.dni = p.dni")) {
         finish_with_error();
@@ -453,9 +605,13 @@ void read_grupos() {
                row[3] ? row[3] : "NULL", row[4] ? row[4] : "NULL");
     }
     mysql_free_result(result);
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void update_grupo() {
+    limpiar_pantalla(); 
     Grupo g;
     printf("--- Actualizar Grupo ---\n");
     read_grupos(); 
@@ -463,21 +619,29 @@ void update_grupo() {
     if (scanf("%d", &g.id_grupo) != 1) {
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
+    clear_input_buffer(); 
     printf("Nuevo nombre del grupo: ");
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     get_string_input(g.nombre, sizeof(g.nombre));
     read_departamentos();
-    printf("Nuevo ID del Departamento (debe existir): ");
+    printf("Nuevo ID del Departamento : ");
     if (scanf("%d", &g.id_departamento) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     read_profesores();
-    printf("Nuevo DNI del Lider (debe existir): ");
+    printf("Nuevo DNI del Lider : ");
+    clear_input_buffer(); 
     get_string_input(g.dni_lider, sizeof(g.dni_lider));
 
     char query[512];
@@ -490,9 +654,13 @@ void update_grupo() {
     } else {
         printf("Grupo actualizado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void delete_grupo() {
+    limpiar_pantalla(); 
     int id;
     printf("--- Eliminar Grupo ---\n");
     read_grupos(); 
@@ -500,8 +668,12 @@ void delete_grupo() {
     if (scanf("%d", &id) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     
     char query[128];
     snprintf(query, sizeof(query), "DELETE FROM grupo WHERE id_grupo=%d", id);
@@ -509,36 +681,47 @@ void delete_grupo() {
     if (mysql_query(con, query)) {
         finish_with_error();
     } else {
-        printf("Grupo eliminado correctamente (asegurese de que no tenga proyectos asociados).\n");
+        printf("Grupo eliminado correctamente .\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
-
-// --- Funciones CRUD para Proyecto ---
 void insert_proyecto() {
+    limpiar_pantalla(); 
     Proyecto p;
     printf("--- Insertar Proyecto ---\n");
     printf("Nombre del proyecto: ");
-    clear_input_buffer(); // <-- ¡Añadido aquí!
+    clear_input_buffer(); 
     get_string_input(p.nombre, sizeof(p.nombre));
     printf("Fecha de inicio (YYYY-MM-DD): ");
+    clear_input_buffer(); 
     get_string_input(p.fecha_inicio, sizeof(p.fecha_inicio));
     printf("Fecha de fin (YYYY-MM-DD): ");
+    clear_input_buffer(); 
     get_string_input(p.fecha_fin, sizeof(p.fecha_fin));
     printf("Presupuesto: ");
     if (scanf("%f", &p.presupuesto) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     read_grupos(); 
-    printf("ID del Grupo (debe existir en Grupos): ");
+    printf("ID del Grupo : ");
     if (scanf("%d", &p.id_grupo) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     
     char query[512];
     snprintf(query, sizeof(query),
@@ -550,9 +733,13 @@ void insert_proyecto() {
     } else {
         printf("Proyecto insertado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void read_proyectos() {
+    limpiar_pantalla(); 
     printf("--- Listado de Proyectos ---\n");
     if (mysql_query(con, "SELECT p.id_proyecto, p.nombre, p.fecha_inicio, p.fecha_fin, p.presupuesto, g.nombre AS grupo FROM proyecto p JOIN grupo g ON p.id_grupo = g.id_grupo")) {
         finish_with_error();
@@ -571,9 +758,13 @@ void read_proyectos() {
                row[3] ? row[3] : "NULL", row[4] ? row[4] : "NULL", row[5] ? row[5] : "NULL");
     }
     mysql_free_result(result);
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void update_proyecto() {
+    limpiar_pantalla(); 
     Proyecto p;
     printf("--- Actualizar Proyecto ---\n");
     read_proyectos(); 
@@ -581,29 +772,42 @@ void update_proyecto() {
     if (scanf("%d", &p.id_proyecto) != 1) {
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     printf("Nuevo nombre del proyecto: ");
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     get_string_input(p.nombre, sizeof(p.nombre));
     printf("Nueva fecha de inicio (YYYY-MM-DD): ");
+    clear_input_buffer(); 
     get_string_input(p.fecha_inicio, sizeof(p.fecha_inicio));
     printf("Nueva fecha de fin (YYYY-MM-DD): ");
+    clear_input_buffer(); 
     get_string_input(p.fecha_fin, sizeof(p.fecha_fin));
     printf("Nuevo presupuesto: ");
     if (scanf("%f", &p.presupuesto) != 1) {
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     read_grupos();
     printf("Nuevo ID del Grupo (debe existir): ");
     if (scanf("%d", &p.id_grupo) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     
     char query[512];
     snprintf(query, sizeof(query),
@@ -615,9 +819,13 @@ void update_proyecto() {
     } else {
         printf("Proyecto actualizado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void delete_proyecto() {
+    limpiar_pantalla(); 
     int id;
     printf("--- Eliminar Proyecto ---\n");
     read_proyectos(); 
@@ -625,8 +833,12 @@ void delete_proyecto() {
     if (scanf("%d", &id) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     
     char query[128];
     snprintf(query, sizeof(query), "DELETE FROM proyecto WHERE id_proyecto=%d", id);
@@ -636,10 +848,13 @@ void delete_proyecto() {
     } else {
         printf("Proyecto eliminado correctamente (cuidado con financiamientos/participaciones).\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
-// --- Funciones CRUD para Financiamiento (muchos a muchos) ---
 void insert_financiamiento() {
+    limpiar_pantalla(); 
     Financiamiento f;
     printf("--- Insertar Financiamiento ---\n");
     read_proyectos(); 
@@ -647,21 +862,33 @@ void insert_financiamiento() {
     if (scanf("%d", &f.id_proyecto) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
+    clear_input_buffer(); 
     read_programas(); 
-    printf("ID del Programa (debe existir): ");
+    printf("ID del Programa : ");
     if (scanf("%d", &f.id_programa) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     printf("Cantidad aportada: ");
     if (scanf("%f", &f.cantidad_aportada) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     
     char query[256];
     snprintf(query, sizeof(query),
@@ -673,9 +900,13 @@ void insert_financiamiento() {
     } else {
         printf("Financiamiento registrado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void read_financiamientos() {
+    limpiar_pantalla(); 
     printf("--- Listado de Financiamientos ---\n");
     if (mysql_query(con, "SELECT f.cantidad_aportada, p.nombre AS proyecto_nombre, pr.nombre AS programa_nombre FROM financiamiento f JOIN proyecto p ON f.id_proyecto = p.id_proyecto JOIN programa pr ON f.id_programa = pr.id_programa")) {
         finish_with_error();
@@ -693,12 +924,13 @@ void read_financiamientos() {
                row[1] ? row[1] : "NULL", row[2] ? row[2] : "NULL", row[0] ? row[0] : "NULL");
     }
     mysql_free_result(result);
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
-// Nota: Actualizar financiamiento es complejo por la clave compuesta, se omite para simplicidad del CRUD basico.
-// Se enfoca en insertar y eliminar.
-
 void delete_financiamiento() {
+    limpiar_pantalla(); 
     int id_proj, id_prog;
     printf("--- Eliminar Financiamiento ---\n");
     read_financiamientos(); 
@@ -706,14 +938,22 @@ void delete_financiamiento() {
     if (scanf("%d", &id_proj) != 1) {
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
+    clear_input_buffer(); 
     printf("ID del Programa del financiamiento a eliminar: ");
     if (scanf("%d", &id_prog) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n"); 
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
+    clear_input_buffer(); 
     
     char query[256];
     snprintf(query, sizeof(query), "DELETE FROM financiamiento WHERE id_proyecto=%d AND id_programa=%d", id_proj, id_prog);
@@ -723,28 +963,35 @@ void delete_financiamiento() {
     } else {
         printf("Financiamiento eliminado correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
-
-// --- Funciones CRUD para Participa (muchos a muchos) ---
 void insert_participa() {
+    limpiar_pantalla(); 
     Participa p;
     printf("--- Insertar Participacion ---\n");
     read_profesores(); 
     printf("DNI del Profesor (debe existir): ");
-    clear_input_buffer(); // <-- ¡Añadido aquí!
+    clear_input_buffer(); 
     get_string_input(p.dni_profesor, sizeof(p.dni_profesor));
     read_proyectos(); 
     printf("ID del Proyecto (debe existir): ");
     if (scanf("%d", &p.id_proyecto) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return; 
     }
-    clear_input_buffer(); // MANTENIDO aquí (después de scanf y antes de get_string_input)
+    clear_input_buffer(); 
     printf("Fecha de incorporacion (YYYY-MM-DD): ");
+    clear_input_buffer(); 
     get_string_input(p.fecha_incorporacion, sizeof(p.fecha_incorporacion));
     printf("Fecha de salida (YYYY-MM-DD, o NULL si no ha salido): ");
+    clear_input_buffer(); 
     get_string_input(p.fecha_salida, sizeof(p.fecha_salida));
 
     char query[512];
@@ -763,9 +1010,13 @@ void insert_participa() {
     } else {
         printf("Participacion registrada correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void read_participaciones() {
+    limpiar_pantalla(); 
     printf("--- Listado de Participaciones ---\n");
     if (mysql_query(con, "SELECT pa.fecha_incorporacion, pa.fecha_salida, pr.nombre AS profesor_nombre, pr.apellido AS profesor_apellido, proy.nombre AS proyecto_nombre FROM participa pa JOIN profesor pr ON pa.dni = pr.dni JOIN proyecto proy ON pa.id_proyecto = proy.id_proyecto")) {
         finish_with_error();
@@ -783,22 +1034,30 @@ void read_participaciones() {
                row[2] ? row[2] : "NULL", row[4] ? row[4] : "NULL", row[0] ? row[0] : "NULL", row[1] ? row[1] : "NULL");
     }
     mysql_free_result(result);
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
 
 void delete_participa() {
+    limpiar_pantalla(); 
     char dni[16];
     int id_proj;
     printf("--- Eliminar Participacion ---\n");
     read_participaciones(); 
     printf("DNI del Profesor de la participacion a eliminar: ");
-    clear_input_buffer(); // <-- ¡Añadido aquí!
+    clear_input_buffer(); 
     get_string_input(dni, sizeof(dni));
     printf("ID del Proyecto de la participacion a eliminar: ");
     if (scanf("%d", &id_proj) != 1) { 
         clear_input_buffer(); 
         printf("Entrada invalida.\n");
+        printf("\nPresiona ENTER para continuar...");
+        get_string_input((char[2]){0}, 2); 
+        limpiar_pantalla(); 
         return;
     }
+    clear_input_buffer(); 
     
     char query[256];
     snprintf(query, sizeof(query), "DELETE FROM participa WHERE dni='%s' AND id_proyecto=%d", dni, id_proj);
@@ -808,30 +1067,33 @@ void delete_participa() {
     } else {
         printf("Participacion eliminada correctamente.\n");
     }
+    printf("\nPresiona ENTER para continuar...");
+    get_string_input((char[2]){0}, 2); 
+    limpiar_pantalla(); 
 }
-
-
-// --- Menús de Tablas ---
 
 void menu_programa() {
     int opcion;
-    Programa p;
     do {
-        printf("\n----- GESTION DE PROGRAMAS -----\n");
-        printf("1. Insertar Programa\n");
-        printf("2. Consultar Programas\n");
-        printf("3. Modificar Programa\n");
-        printf("4. Eliminar Programa\n");
-        printf("0. Volver al menu principal\n");
-        printf("Opcion: ");
-        if (scanf("%d", &opcion) != 1) { printf("Entrada invalida.\n"); opcion = -1; clear_input_buffer(); } // Limpiar y poner opcion invalida
+        display_crud_menu("PROGRAMA", &opcion); 
         switch (opcion) {
-            case 1: insert_programa(); break;
-            case 2: read_programas(); break;
-            case 3: update_programa(); break;
-            case 4: delete_programa(); break;
-            case 0: break;
-            default: printf("Opcion no valida. Intente de nuevo.\n"); break;
+            case 1: insert_programa();
+             break;
+            case 2: read_programas(); 
+            break;
+            case 3: update_programa();
+             break;
+            case 4: delete_programa();
+             break;
+            case 0:
+             break; 
+            default: 
+                limpiar_pantalla(); 
+                printf("Opcion no valida. Intente de nuevo.\n"); 
+                printf("\nPresiona ENTER para continuar...");
+                get_string_input((char[2]){0}, 2); 
+                limpiar_pantalla(); 
+                break;
         }
     } while (opcion != 0);
 }
@@ -839,21 +1101,25 @@ void menu_programa() {
 void menu_profesor() {
     int opcion;
     do {
-        printf("\n----- GESTION DE PROFESORES -----\n");
-        printf("1. Insertar Profesor\n");
-        printf("2. Consultar Profesores\n");
-        printf("3. Modificar Profesor\n");
-        printf("4. Eliminar Profesor\n");
-        printf("0. Volver al menu principal\n");
-        printf("Opcion: ");
-        if (scanf("%d", &opcion) != 1) { printf("Entrada invalida.\n"); opcion = -1; clear_input_buffer(); }
+        display_crud_menu("PROFESOR", &opcion); 
         switch (opcion) {
-            case 1: insert_profesor(); break;
-            case 2: read_profesores(); break;
-            case 3: update_profesor(); break;
-            case 4: delete_profesor(); break;
-            case 0: break;
-            default: printf("Opcion no valida. Intente de nuevo.\n"); break;
+            case 1: insert_profesor(); 
+            break;
+            case 2: read_profesores();
+             break;
+            case 3: update_profesor();
+             break;
+            case 4: delete_profesor();
+             break;
+            case 0: 
+            break; 
+            default: 
+                limpiar_pantalla(); 
+                printf("Opcion no valida. Intente de nuevo.\n"); 
+                printf("\nPresiona ENTER para continuar...");
+                get_string_input((char[2]){0}, 2); 
+                limpiar_pantalla(); 
+                break;
         }
     } while (opcion != 0);
 }
@@ -861,21 +1127,25 @@ void menu_profesor() {
 void menu_departamento() {
     int opcion;
     do {
-        printf("\n----- GESTION DE DEPARTAMENTOS -----\n");
-        printf("1. Insertar Departamento\n");
-        printf("2. Consultar Departamentos\n");
-        printf("3. Modificar Departamento\n");
-        printf("4. Eliminar Departamento\n");
-        printf("0. Volver al menu principal\n");
-        printf("Opcion: ");
-        if (scanf("%d", &opcion) != 1) { printf("Entrada invalida.\n"); opcion = -1; clear_input_buffer(); }
+        display_crud_menu("DEPARTAMENTO", &opcion); 
         switch (opcion) {
-            case 1: insert_departamento(); break;
-            case 2: read_departamentos(); break;
-            case 3: update_departamento(); break;
-            case 4: delete_departamento(); break;
-            case 0: break;
-            default: printf("Opcion no valida. Intente de nuevo.\n"); break;
+            case 1: insert_departamento(); 
+            break;
+            case 2: read_departamentos(); 
+            break;
+            case 3: update_departamento(); 
+            break;
+            case 4: delete_departamento(); 
+            break;
+            case 0: 
+            break; 
+            default: 
+                limpiar_pantalla(); 
+                printf("Opcion no valida. Intente de nuevo.\n"); 
+                printf("\nPresiona ENTER para continuar...");
+                get_string_input((char[2]){0}, 2); 
+                limpiar_pantalla(); 
+                break;
         }
     } while (opcion != 0);
 }
@@ -883,21 +1153,25 @@ void menu_departamento() {
 void menu_grupo() {
     int opcion;
     do {
-        printf("\n----- GESTION DE GRUPOS -----\n");
-        printf("1. Insertar Grupo\n");
-        printf("2. Consultar Grupos\n");
-        printf("3. Modificar Grupo\n");
-        printf("4. Eliminar Grupo\n");
-        printf("0. Volver al menu principal\n");
-        printf("Opcion: ");
-        if (scanf("%d", &opcion) != 1) { printf("Entrada invalida.\n"); opcion = -1; clear_input_buffer(); }
+        display_crud_menu("GRUPO", &opcion); 
         switch (opcion) {
-            case 1: insert_grupo(); break;
-            case 2: read_grupos(); break;
-            case 3: update_grupo(); break;
-            case 4: delete_grupo(); break;
-            case 0: break;
-            default: printf("Opcion no valida. Intente de nuevo.\n"); break;
+            case 1: insert_grupo(); 
+            break;
+            case 2: read_grupos(); 
+            break;
+            case 3: update_grupo(); 
+            break;
+            case 4: delete_grupo(); 
+            break;
+            case 0: 
+            break; 
+            default: 
+                limpiar_pantalla(); 
+                printf("Opcion no valida. Intente de nuevo.\n"); 
+                printf("\nPresiona ENTER para continuar...");
+                get_string_input((char[2]){0}, 2); 
+                limpiar_pantalla(); 
+                break;
         }
     } while (opcion != 0);
 }
@@ -905,21 +1179,24 @@ void menu_grupo() {
 void menu_proyecto() {
     int opcion;
     do {
-        printf("\n----- GESTION DE PROYECTOS -----\n");
-        printf("1. Insertar Proyecto\n");
-        printf("2. Consultar Proyectos\n");
-        printf("3. Modificar Proyecto\n");
-        printf("4. Eliminar Proyecto\n");
-        printf("0. Volver al menu principal\n");
-        printf("Opcion: ");
-        if (scanf("%d", &opcion) != 1) { printf("Entrada invalida.\n"); opcion = -1; clear_input_buffer(); }
+        display_crud_menu("PROYECTO", &opcion); 
         switch (opcion) {
-            case 1: insert_proyecto(); break;
-            case 2: read_proyectos(); break;
-            case 3: update_proyecto(); break;
-            case 4: delete_proyecto(); break;
-            case 0: break;
-            default: printf("Opcion no valida. Intente de nuevo.\n"); break;
+            case 1: insert_proyecto(); 
+            break;
+            case 2: read_proyectos(); 
+            break;
+            case 3: update_proyecto();
+             break;
+            case 4: delete_proyecto(); 
+            break;
+            case 0: break; 
+            default: 
+                limpiar_pantalla(); 
+                printf("Opcion no valida. Intente de nuevo.\n"); 
+                printf("\nPresiona ENTER para continuar...");
+                get_string_input((char[2]){0}, 2); 
+                limpiar_pantalla(); 
+                break;
         }
     } while (opcion != 0);
 }
@@ -927,20 +1204,23 @@ void menu_proyecto() {
 void menu_financiamiento() {
     int opcion;
     do {
-        printf("\n----- GESTION DE FINANCIAMIENTOS -----\n");
-        printf("1. Insertar Financiamiento\n");
-        printf("2. Consultar Financiamientos\n");
-        // printf("3. Modificar Financiamiento (No implementado por clave compuesta)\n");
-        printf("4. Eliminar Financiamiento\n");
-        printf("0. Volver al menu principal\n");
-        printf("Opcion: ");
-        if (scanf("%d", &opcion) != 1) { printf("Entrada invalida.\n"); opcion = -1; clear_input_buffer(); }
+        display_crud_menu("FINANCIAMIENTO", &opcion); 
         switch (opcion) {
-            case 1: insert_financiamiento(); break;
-            case 2: read_financiamientos(); break;
-            case 4: delete_financiamiento(); break; // Directamente la opcion 4
-            case 0: break;
-            default: printf("Opcion no valida. Intente de nuevo.\n"); break;
+            case 1: insert_financiamiento();
+             break;
+            case 2: read_financiamientos();
+             break;
+            case 4: delete_financiamiento();
+             break; 
+            case 0: 
+            break; 
+            default: 
+                limpiar_pantalla(); 
+                printf("Opcion no valida. Intente de nuevo.\n"); 
+                printf("\nPresiona ENTER para continuar...");
+                get_string_input((char[2]){0}, 2); 
+                limpiar_pantalla(); 
+                break;
         }
     } while (opcion != 0);
 }
@@ -948,70 +1228,74 @@ void menu_financiamiento() {
 void menu_participa() {
     int opcion;
     do {
-        printf("\n----- GESTION DE PARTICIPACIONES -----\n");
-        printf("1. Insertar Participacion\n");
-        printf("2. Consultar Participaciones\n");
-        // printf("3. Modificar Participacion (No implementado por clave compuesta)\n");
-        printf("4. Eliminar Participacion\n");
-        printf("0. Volver al menu principal\n");
-        printf("Opcion: ");
-        if (scanf("%d", &opcion) != 1) { printf("Entrada invalida.\n"); opcion = -1; clear_input_buffer(); }
+        display_crud_menu("PARTICIPACION", &opcion); 
         switch (opcion) {
-            case 1: insert_participa(); break;
-            case 2: read_participaciones(); break;
-            case 4: delete_participa(); break; // Directamente la opcion 4
-            case 0: break;
-            default: printf("Opcion no valida. Intente de nuevo.\n"); break;
+            case 1: insert_participa(); 
+            break;
+            case 2: read_participaciones();
+             break;
+            case 4: delete_participa(); 
+            break; 
+            case 0:
+             break; 
+            default: 
+                limpiar_pantalla(); 
+                printf("Opcion no valida. Intente de nuevo.\n"); 
+                printf("\nPresiona ENTER para continuar...");
+                get_string_input((char[2]){0}, 2); 
+                limpiar_pantalla(); 
+                break;
         }
     } while (opcion != 0);
 }
 
-
-// --- Función Principal (main) ---
-
 int main() {
-    conectar(); // Establecer conexión a la base de datos al inicio
+    conectar(); 
 
     int main_opc;
-    int crud_opc;
 
     do {
-        display_main_menu();
+        display_main_menu(); 
         if (scanf("%d", &main_opc) != 1) {
-            clear_input_buffer();
             printf("Entrada invalida. Por favor, ingresa un numero.\n");
+            main_opc = -1; 
+            clear_input_buffer(); 
+            printf("\nPresiona ENTER para continuar...");
+            get_string_input((char[2]){0}, 2); 
+            limpiar_pantalla(); 
             continue;
         }
-        clear_input_buffer(); // Limpiar el buffer después de leer el número de opción del menú principal
+        clear_input_buffer(); 
 
-        if (main_opc >= 1 && main_opc <= 7) {
-            const char* table_names[] = {"Programa", "Profesor", "Departamento", "Grupo", "Proyecto", "Financiamiento", "Participa"};
-            do {
-                display_crud_menu(table_names[main_opc - 1]);
-                if (scanf("%d", &crud_opc) != 1) {
-                    clear_input_buffer();
-                    printf("Entrada invalida. Por favor, ingresa un numero.\n");
-                    crud_opc = 0; // Para que se quede en el bucle CRUD
-                    continue;
-                }
-                clear_input_buffer(); // Limpiar el buffer después de leer el número de opción del menú CRUD
-                
-                // Las funciones CRUD individuales ahora se encargan de clear_input_buffer()
-                // cuando necesitan leer cadenas después de un scanf.
-                if (crud_opc >=1 && crud_opc <=4){
-                    handle_crud_choice(main_opc, crud_opc);
-                } else if (crud_opc != 5) {
-                    printf("Opcion invalida. Por favor, intenta de nuevo.\n");
-                }
-
-            } while (crud_opc != 5); // Bucle para el menú CRUD
-        } else if (main_opc == 8) {
-            printf("Saliendo del programa. \n");
-        } else {
-            printf("Opcion invalida. Por favor, selecciona un numero entre 1 y 8.\n");
+        switch (main_opc) {
+            case 1: menu_programa(); 
+            break;
+            case 2: menu_profesor(); 
+            break;
+            case 3: menu_departamento();
+             break;
+            case 4: menu_grupo(); 
+            break;
+            case 5: menu_proyecto();
+             break;
+            case 6: menu_financiamiento();
+             break;
+            case 7: menu_participa(); 
+            break;
+            case 8: 
+                limpiar_pantalla();
+                printf("Saliendo del programa. ¡Hasta luego!\n");
+                break;
+            default: 
+                limpiar_pantalla(); 
+                printf("Opcion invalida. Por favor, selecciona un numero entre 1 y 8.\n"); 
+                printf("\nPresiona ENTER para continuar...");
+                get_string_input((char[2]){0}, 2); 
+                limpiar_pantalla(); 
+                break;
         }
-    } while (main_opc != 8); // Bucle para el menú principal
+    } while (main_opc != 8); 
 
-    mysql_close(con); // Cerrar la conexión al salir del programa
+    mysql_close(con); 
     return 0;
 }
